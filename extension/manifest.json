@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "SF6 Battlelog Sync",
+  "description": "Buckler のバトルログを取得してスプレッドシートに追記する",
+  "version": "0.0.1",
+  "permissions": ["scripting", "storage", "activeTab"],
+  "host_permissions": [
+    "https://www.streetfighter.com/*",
+    "https://script.google.com/*",
+    "https://script.googleusercontent.com/*"
+  ],
+  "action": {
+    "default_title": "SF6 Battlelog Sync",
+    "default_popup": "popup.html"
+  }
+}

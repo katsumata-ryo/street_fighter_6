@@ -1,0 +1,8 @@
+# 認証情報（cookie はパスワード相当なので絶対に commit しない）
+.auth/
+
+# 取得データ
+data/
+
+.DS_Store
+.idea/
