@@ -6,7 +6,9 @@
  * 後追いで埋める（最新行は次回同期まで空欄）。
  */
 
-// デプロイ前に必ず書き換える。拡張側の設定と同じ値にすること。
+// 拡張側の設定と同じ合言葉にする。
+// このリポジトリは public なので、本物の値は Apps Script エディタ側だけで書き換えること。
+// （スクリプトプロパティに置いてもよい: PropertiesService.getScriptProperties().getProperty('TOKEN')）
 const TOKEN = 'CHANGE_ME';
 
 const SHEET_NAME = 'battlelog';
