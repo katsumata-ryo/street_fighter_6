@@ -14,21 +14,34 @@ const TOKEN = 'CHANGE_ME';
 const SHEET_NAME = 'battlelog';
 
 const HEADERS = [
+  // 試合そのもの
   'replay_id',
   'played_at',
   'battle_type',
-  'my_character',
-  'my_input',
-  'lp_before',
-  'lp_delta',
   'result',
   'rounds',
+  // 自分
+  'my_character',
+  'my_input',
+  'my_league_rank',
+  'lp_before',
+  'lp_delta',
+  'my_master_rating',
+  'my_round_results',
+  // 相手
   'opponent',
   'opponent_sid',
   'opponent_character',
+  'opponent_input',
+  'opponent_league_rank',
   'opponent_lp',
+  'opponent_master_rating',
+  'opponent_round_results',
   'opponent_platform',
 ];
+
+// round_results は "1,0,7" のような文字列。数値として解釈されないよう書式を固定する。
+const TEXT_COLUMNS = ['my_round_results', 'opponent_round_results'];
 
 const COL = HEADERS.reduce((acc, name, i) => {
   acc[name] = i;
@@ -91,22 +104,14 @@ function appendRows(incoming) {
     // 古い順に積むと lp_delta の計算が素直になる
     fresh.sort((a, b) => a.played_at - b.played_at);
 
-    const values = fresh.map((row) => [
-      row.replay_id,
-      new Date(row.played_at * 1000),
-      row.battle_type,
-      row.my_character,
-      row.my_input,
-      row.lp_before,
-      '', // lp_delta は後段の backfill で埋める
-      row.result,
-      row.rounds,
-      row.opponent,
-      row.opponent_sid,
-      row.opponent_character,
-      row.opponent_lp,
-      row.opponent_platform,
-    ]);
+    // lp_delta だけは受信データに無く、後段の backfill で埋める
+    const values = fresh.map((row) =>
+      HEADERS.map((name) => {
+        if (name === 'lp_delta') return '';
+        if (name === 'played_at') return new Date(row.played_at * 1000);
+        return row[name] === undefined ? '' : row[name];
+      })
+    );
 
     sheet.getRange(sheet.getLastRow() + 1, 1, values.length, HEADERS.length).setValues(values);
     sortByPlayedAt(sheet);
@@ -130,14 +135,37 @@ function getSheet() {
     sheet = ss.insertSheet(SHEET_NAME);
   }
 
-  if (sheet.getLastRow() === 0) {
-    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight('bold');
-    sheet.setFrozenRows(1);
-    sheet.getRange(2, COL.played_at + 1, sheet.getMaxRows() - 1, 1)
-      .setNumberFormat('yyyy-mm-dd hh:mm:ss');
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow === 0) {
+    initSheet(sheet);
+    return sheet;
+  }
+
+  // 列構成が変わったまま追記すると値がズレるので、必ず突き合わせる
+  const current = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  if (current.join('\t') !== HEADERS.join('\t')) {
+    if (lastRow > 1) {
+      throw new Error(
+        `シート「${SHEET_NAME}」の列構成が古いままです。` +
+        'シートごと削除してから同期し直してください（既存データは Buckler から取り直せます）'
+      );
+    }
+    initSheet(sheet);
   }
 
   return sheet;
+}
+
+function initSheet(sheet) {
+  sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight('bold');
+  sheet.setFrozenRows(1);
+
+  const bodyRows = sheet.getMaxRows() - 1;
+  sheet.getRange(2, COL.played_at + 1, bodyRows, 1).setNumberFormat('yyyy-mm-dd hh:mm:ss');
+  for (const name of TEXT_COLUMNS) {
+    sheet.getRange(2, COL[name] + 1, bodyRows, 1).setNumberFormat('@');
+  }
 }
 
 function readKnownIds(sheet) {

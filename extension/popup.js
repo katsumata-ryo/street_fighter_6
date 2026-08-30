@@ -163,15 +163,25 @@ async function collectFromPage() {
         replay_id: replay.replay_id,
         played_at: replay.uploaded_at,
         battle_type: clean(replay.replay_battle_type_name),
-        my_character: mine.playing_character_name,
-        my_input: clean(mine.battle_input_type_name),
-        lp_before: mine.league_point,
         result: myRounds > theirRounds ? 'WIN' : 'LOSE',
         rounds: `${myRounds}-${theirRounds}`,
+
+        my_character: mine.playing_character_name,
+        my_input: clean(mine.battle_input_type_name),
+        my_league_rank: mine.league_rank,
+        lp_before: mine.league_point,
+        my_master_rating: mine.master_rating,
+        // 値の意味（KO/パーフェクト/時間切れ等）は未解明なので生のまま残す
+        my_round_results: mine.round_results.join(','),
+
         opponent: theirs.player.fighter_id,
         opponent_sid: theirs.player.short_id,
         opponent_character: theirs.playing_character_name,
+        opponent_input: clean(theirs.battle_input_type_name),
+        opponent_league_rank: theirs.league_rank,
         opponent_lp: theirs.league_point,
+        opponent_master_rating: theirs.master_rating,
+        opponent_round_results: theirs.round_results.join(','),
         opponent_platform: theirs.player.platform_name,
       };
     });
