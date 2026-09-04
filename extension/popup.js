@@ -120,34 +120,46 @@ async function collectFromPage() {
     const mode = (location.pathname.match(/\/battlelog\/([^/?#]+)/) || [])[1];
     if (!mode) return { error: 'バトルログのページで実行してね' };
 
-    const totalPage = first.total_page || 1;
+    // pageProps の直下にページャ情報が無いページ構成なので、total_page には頼らず
+    // 「空 or 1ページ未満の件数が返ったら終わり」で打ち切る。
+    const PAGE_SIZE = 10;
+    const MAX_PAGES = 200; // 無限ループ避けの保険
     const replays = [];
+    let totalPage = null;
 
-    for (let page = 1; page <= totalPage; page++) {
-      let list;
+    for (let page = 1; page <= MAX_PAGES; page++) {
+      const url =
+        `${data.assetPrefix}/_next/data/${data.buildId}/${data.locale}` +
+        `/profile/${sid}/battlelog/${mode}.json?sid=${sid}&page=${page}`;
 
-      if (page === first.current_page) {
-        // 今開いてるページのぶんは取得済みなので使い回す
-        list = first.replay_list;
-      } else {
-        const url =
-          `${data.assetPrefix}/_next/data/${data.buildId}/${data.locale}` +
-          `/profile/${sid}/battlelog/${mode}.json?sid=${sid}&page=${page}`;
-
-        const res = await fetch(url, {
-          headers: { 'x-nextjs-data': '1' },
-          credentials: 'same-origin',
-        });
-        if (!res.ok) return { error: `${page}ページ目の取得に失敗 (HTTP ${res.status})` };
-
-        const json = await res.json();
-        list = json.pageProps && json.pageProps.replay_list;
-        await sleep(300); // 連打しないための間隔
+      const res = await fetch(url, {
+        headers: { 'x-nextjs-data': '1' },
+        credentials: 'same-origin',
+      });
+      if (!res.ok) {
+        // 1ページ目でコケたら何も取れていないので失敗扱い、
+        // 途中でコケたぶんはそこまでの結果を活かす
+        if (page === 1) return { error: `1ページ目の取得に失敗 (HTTP ${res.status})` };
+        break;
       }
 
-      if (!list || list.length === 0) break;
+      const json = await res.json();
+      const props = json.pageProps || {};
+      const list = props.replay_list;
+
+      if (!Array.isArray(list) || list.length === 0) break;
       replays.push(...list);
+
+      if (totalPage === null && Number.isFinite(Number(props.total_page))) {
+        totalPage = Number(props.total_page);
+      }
+      if (totalPage !== null && page >= totalPage) break;
+      if (list.length < PAGE_SIZE) break;
+
+      await sleep(300); // 連打しないための間隔
     }
+
+    if (replays.length === 0) return { error: '試合が1件も取得できなかった' };
 
     const rows = replays.map((replay) => {
       const p1 = replay.player1_info;
