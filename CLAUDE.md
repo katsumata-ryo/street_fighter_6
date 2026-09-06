@@ -16,7 +16,6 @@ SF6 の個人用ツール置き場。2つのものが同居している。
 apps_script/Code.gs        同期の受け皿。重複排除・追記・lp_delta の後追い更新
 extension/                 Chrome 拡張（Manifest V3）。popup.js が取得と送信
 scripts/fetch_frame_data.rb  フレームデータの取得スクリプト
-src/config.rb              settings.yml の読み出しと 1Password 経由のシークレット解決
 data/                      取得データ（gitignore 済み）
 docs/design/               設計メモ
 ```
@@ -82,15 +81,16 @@ jq -r '.moves[] | select(.notes[]? | test("無敵")) | "\(.name): \(.notes|join(
 
 | 対象 | 中身 |
 | --- | --- |
-| `.auth/storage_state.json` | Buckler のログイン cookie。**パスワード相当** |
-| `.auth/browser_profile/` | Cloudflare 通過証明を含むブラウザプロファイル |
 | Apps Script の `TOKEN` | 知られると誰でもシートに書き込める |
 | Apps Script の `/exec` URL | 上と組み合わせて悪用できる |
-| `settings.yml` | Capcom ID、SID、1Password への参照 |
-| `op read` の出力 | パスワードそのもの |
+| Buckler のログイン cookie | **パスワード相当**。今は拡張がブラウザのセッションをそのまま使うので、リポジトリ側には持たない |
 
 **値を会話やログ、コミットメッセージ、コードコメントに書き出さない。**
 デバッグ時も `TOKEN` や cookie を丸ごと出力せず、長さや先頭数文字の確認に留める。
+
+`.gitignore` の `.auth/` は、ログインを自動化する案（cookie やブラウザプロファイルを
+手元に置く方式）を試したときの名残。その案は却下済みだが、また同じことを試すときの
+保険として残してある。
 README や docs にサンプルを載せるときは、必ずダミー値（`https://.../exec`、`YOUR_TOKEN`）にする。
 
 ### 個人情報
