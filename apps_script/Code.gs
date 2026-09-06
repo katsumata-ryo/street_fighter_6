@@ -12,6 +12,7 @@
 const TOKEN = 'CHANGE_ME';
 
 const SHEET_NAME = 'battlelog';
+const TIME_ZONE = 'Asia/Tokyo';
 
 const HEADERS = [
   // 試合そのもの
@@ -129,6 +130,13 @@ function appendRows(incoming) {
 
 function getSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // played_at は UNIX 秒から Date にして書くので、表示はシートのタイムゾーン任せになる。
+  // 既定が太平洋時間だと JST から 16〜17 時間ズレて見えるため揃えておく。
+  if (ss.getSpreadsheetTimeZone() !== TIME_ZONE) {
+    ss.setSpreadsheetTimeZone(TIME_ZONE);
+  }
+
   let sheet = ss.getSheetByName(SHEET_NAME);
 
   if (!sheet) {
