@@ -102,6 +102,61 @@ els.sync.addEventListener('click', async () => {
 async function collectFromPage() {
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const clean = (value) => String(value || '').replace(/^\[t\]/, '');
+  const leagueRankKey = (playerInfo) => {
+    const leagueRankKeys = {
+      0: 'new_challenger',
+      1: 'rookie_1',
+      2: 'rookie_2',
+      3: 'rookie_3',
+      4: 'rookie_4',
+      5: 'rookie_5',
+      6: 'iron_1',
+      7: 'iron_2',
+      8: 'iron_3',
+      9: 'iron_4',
+      10: 'iron_5',
+      11: 'bronze_1',
+      12: 'bronze_2',
+      13: 'bronze_3',
+      14: 'bronze_4',
+      15: 'bronze_5',
+      16: 'silver_1',
+      17: 'silver_2',
+      18: 'silver_3',
+      19: 'silver_4',
+      20: 'silver_5',
+      21: 'gold_1',
+      22: 'gold_2',
+      23: 'gold_3',
+      24: 'gold_4',
+      25: 'gold_5',
+      26: 'platinum_1',
+      27: 'platinum_2',
+      28: 'platinum_3',
+      29: 'platinum_4',
+      30: 'platinum_5',
+      31: 'diamond_1',
+      32: 'diamond_2',
+      33: 'diamond_3',
+      34: 'diamond_4',
+      35: 'diamond_5',
+      36: 'master',
+    };
+    const masterLeagueKeys = {
+      36: 'master',
+      37: 'legend',
+      40: 'high_master',
+      41: 'grand_master',
+      42: 'ultimate_master',
+    };
+
+    const leagueRank = Number(playerInfo.league_rank);
+    if (leagueRank === 36) {
+      const masterLeague = Number(playerInfo.master_league);
+      return masterLeagueKeys[masterLeague] || `unknown_master_league_${masterLeague}`;
+    }
+    return leagueRankKeys[leagueRank] || `unknown_league_rank_${leagueRank}`;
+  };
 
   try {
     const el = document.getElementById('__NEXT_DATA__');
@@ -175,24 +230,37 @@ async function collectFromPage() {
         replay_id: replay.replay_id,
         played_at: replay.uploaded_at,
         battle_type: clean(replay.replay_battle_type_name),
+        battle_version: replay.battle_version,
         result: myRounds > theirRounds ? 'WIN' : 'LOSE',
         rounds: `${myRounds}-${theirRounds}`,
 
         my_character: mine.playing_character_name,
+        my_character_id: mine.playing_character_id,
+        my_character_key: mine.playing_character_tool_name,
         my_input: clean(mine.battle_input_type_name),
+        my_input_type: mine.battle_input_type,
         my_league_rank: mine.league_rank,
+        my_league_rank_key: leagueRankKey(mine),
+        my_master_league: mine.master_league,
         lp_before: mine.league_point,
         my_master_rating: mine.master_rating,
+        my_master_rating_ranking: mine.master_rating_ranking,
         // 値の意味（KO/パーフェクト/時間切れ等）は未解明なので生のまま残す
         my_round_results: mine.round_results.join(','),
 
         opponent: theirs.player.fighter_id,
         opponent_sid: theirs.player.short_id,
         opponent_character: theirs.playing_character_name,
+        opponent_character_id: theirs.playing_character_id,
+        opponent_character_key: theirs.playing_character_tool_name,
         opponent_input: clean(theirs.battle_input_type_name),
+        opponent_input_type: theirs.battle_input_type,
         opponent_league_rank: theirs.league_rank,
+        opponent_league_rank_key: leagueRankKey(theirs),
+        opponent_master_league: theirs.master_league,
         opponent_lp: theirs.league_point,
         opponent_master_rating: theirs.master_rating,
+        opponent_master_rating_ranking: theirs.master_rating_ranking,
         opponent_round_results: theirs.round_results.join(','),
         opponent_platform: theirs.player.platform_name,
       };

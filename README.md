@@ -52,22 +52,35 @@
 | `replay_id` | 試合の一意ID。重複排除のキー |
 | `played_at` | 対戦日時 |
 | `battle_type` | RANKED MATCH など |
+| `battle_version` | 対戦時のゲームバージョン |
 | `result` | WIN / LOSE |
 | `rounds` | 取得ラウンド数（`2-1` など） |
 | `my_character` | 自分の使用キャラ |
+| `my_character_id` | 自分の使用キャラID |
+| `my_character_key` | 自分の使用キャラ識別子（`ryu` など） |
 | `my_input` | クラシック / モダン |
+| `my_input_type` | 自分の入力方式ID（クラシック: `0`、モダン: `1`） |
 | `my_league_rank` | ランク番号 |
+| `my_league_rank_key` | ランク識別子（`diamond_5`、`master` など） |
+| `my_master_league` | Master内ランク番号 |
 | `lp_before` | **その試合を始める前**の LP |
 | `lp_delta` | LP 増減（後述） |
 | `my_master_rating` | MR（マスター未到達なら 0） |
+| `my_master_rating_ranking` | MR順位 |
 | `my_round_results` | ラウンドごとの生の値（`1,0,7` など） |
 | `opponent` | 相手のファイターID |
 | `opponent_sid` | 相手の SID |
 | `opponent_character` | 相手の使用キャラ |
+| `opponent_character_id` | 相手の使用キャラID |
+| `opponent_character_key` | 相手の使用キャラ識別子 |
 | `opponent_input` | 相手の入力方式 |
+| `opponent_input_type` | 相手の入力方式ID |
 | `opponent_league_rank` | 相手のランク番号 |
+| `opponent_league_rank_key` | 相手のランク識別子 |
+| `opponent_master_league` | 相手のMaster内ランク番号 |
 | `opponent_lp` | 相手の LP |
 | `opponent_master_rating` | 相手の MR |
+| `opponent_master_rating_ranking` | 相手のMR順位 |
 | `opponent_round_results` | 相手のラウンド生値 |
 | `opponent_platform` | 相手のプラットフォーム |
 
@@ -78,6 +91,12 @@ Buckler が返す `league_point` は **その試合の開始前**の LP。つま
 そのため `lp_delta` は「次の試合の `lp_before` との差」として後追いで埋めている。最新の1行は次の試合がまだ無いので空欄になり、**次回の同期で自動的に埋まる**。
 
 LP はキャラクターごとに独立しているので、直後の試合が別キャラだった場合は空欄のままにしている。
+
+### ランク識別子
+
+`my_league_rank_key` と `opponent_league_rank_key` は、Buckler の数値を集計しやすい lower snake case に変換した値。通常ランクでは `diamond_5` のようになり、Master内では `master` / `high_master` / `grand_master` / `ultimate_master` / `legend` になる。
+
+Buckler では通常ランクを `league_rank`、Master内の区分を `master_league` で返している。未対応の番号が返った場合は `unknown_league_rank_99` または `unknown_master_league_99` のように記録し、新しいランクの追加を見落とさないようにしている。
 
 ### `round_results` の値
 
@@ -98,7 +117,9 @@ LP はキャラクターごとに独立しているので、直後の試合が�
 
 `apps_script/Code.gs` の `HEADERS` と `extension/popup.js` の変換部分の両方を更新する。行の組み立ては `HEADERS` から導出しているので、順序のズレは起きない。
 
-既存シートは列構成が古いままなので、**シートごと削除してから**同期し直す。消し忘れた場合はエラーで安全に停止する。
+既存の列名と順序が保たれていれば、同期時に新しい列だけを自動挿入する。過去の行では新しい列が空欄になり、新しく同期した行から値が入る。
+
+列名の変更・並べ替え・独自列の追加がある場合は、安全のためエラーで停止する。
 
 ### Apps Script を更新するとき
 

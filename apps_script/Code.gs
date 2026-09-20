@@ -19,24 +19,37 @@ const HEADERS = [
   'replay_id',
   'played_at',
   'battle_type',
+  'battle_version',
   'result',
   'rounds',
   // 自分
   'my_character',
+  'my_character_id',
+  'my_character_key',
   'my_input',
+  'my_input_type',
   'my_league_rank',
+  'my_league_rank_key',
+  'my_master_league',
   'lp_before',
   'lp_delta',
   'my_master_rating',
+  'my_master_rating_ranking',
   'my_round_results',
   // 相手
   'opponent',
   'opponent_sid',
   'opponent_character',
+  'opponent_character_id',
+  'opponent_character_key',
   'opponent_input',
+  'opponent_input_type',
   'opponent_league_rank',
+  'opponent_league_rank_key',
+  'opponent_master_league',
   'opponent_lp',
   'opponent_master_rating',
+  'opponent_master_rating_ranking',
   'opponent_round_results',
   'opponent_platform',
 ];
@@ -153,16 +166,36 @@ function getSheet() {
   // 列構成が変わったまま追記すると値がズレるので、必ず突き合わせる
   const current = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   if (current.join('\t') !== HEADERS.join('\t')) {
-    if (lastRow > 1) {
-      throw new Error(
-        `シート「${SHEET_NAME}」の列構成が古いままです。` +
-        'シートごと削除してから同期し直してください（既存データは Buckler から取り直せます）'
-      );
-    }
-    initSheet(sheet);
+    migrateSheetHeaders(sheet, current);
   }
 
   return sheet;
+}
+
+/**
+ * 既存列の順序を変えずに、新しく追加された列だけを挿入する。
+ * 列名の変更・並べ替え・独自列がある場合は、安全のため自動移行しない。
+ */
+function migrateSheetHeaders(sheet, currentHeaders) {
+  const unknown = currentHeaders.filter((name) => !HEADERS.includes(name));
+  const existingInExpectedOrder = HEADERS.filter((name) => currentHeaders.includes(name));
+  const orderChanged = existingInExpectedOrder.join('\t') !== currentHeaders.join('\t');
+
+  if (unknown.length > 0 || orderChanged) {
+    throw new Error(
+      `シート「${SHEET_NAME}」の列構成を自動更新できません。` +
+      '列名や順序、独自列を確認してください'
+    );
+  }
+
+  const migrated = currentHeaders.slice();
+  for (let i = 0; i < HEADERS.length; i++) {
+    if (migrated[i] === HEADERS[i]) continue;
+    sheet.insertColumnBefore(i + 1);
+    migrated.splice(i, 0, HEADERS[i]);
+  }
+
+  initSheet(sheet);
 }
 
 function initSheet(sheet) {
